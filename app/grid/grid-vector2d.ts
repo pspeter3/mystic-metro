@@ -14,3 +14,5 @@ export class GridVector2D implements GridVector2DRecord {
     this.r = r;
   }
 }
+
+export const ORIGIN = new GridVector2D(0, 0);
