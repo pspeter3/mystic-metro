@@ -1,11 +1,11 @@
-import { GridVector2D, ORIGIN, type GridVector2DRecord } from "./grid-vector2d";
+import { GridVector2D, type GridVector2DRecord } from "./grid-vector2d";
 
 export class GridBounds2D {
   readonly min: GridVector2D;
   readonly max: GridVector2D;
 
   static fromOrigin(size: GridVector2DRecord): GridBounds2D {
-    return new GridBounds2D(ORIGIN, size);
+    return new GridBounds2D(GridVector2D.ORIGIN, size);
   }
 
   constructor(a: GridVector2DRecord, b: GridVector2DRecord) {
