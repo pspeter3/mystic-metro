@@ -2,6 +2,7 @@
   "name": "mystic-metro",
   "private": true,
   "description": "Post apocalyptic dungeon punk exploration roguelike",
+  "type": "module",
   "scripts": {
     "build": "wireit",
     "fix": "wireit",
@@ -34,6 +35,7 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
     "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.8",
     "wireit": "^0.14.9"
   },
   "wireit": {
@@ -46,6 +48,7 @@
     "test": {
       "dependencies": [
         "test:format",
+        "test:spec",
         "test:types"
       ]
     },
@@ -53,6 +56,13 @@
       "command": "prettier --cache --check '*.{ts,md}' 'app/**/*.{ts,tsx}'",
       "files": [
         "*.{ts,md}",
+        "app/**/*.{ts,tsx}"
+      ],
+      "output": []
+    },
+    "test:spec": {
+      "command": "vitest run",
+      "files": [
         "app/**/*.{ts,tsx}"
       ],
       "output": []
@@ -73,7 +83,7 @@
       "files": [
         "app/routes.ts",
         "app/routes/**/*.tsx",
-        "!app/routes/**/*.test.tsx"
+        "!app/routes/**/*.spec.tsx"
       ],
       "output": [
         ".react-router/**/*.d.ts"
