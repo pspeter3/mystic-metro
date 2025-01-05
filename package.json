@@ -28,22 +28,30 @@
   },
   "devDependencies": {
     "@react-router/dev": "^7.1.1",
+    "@tailwindcss/vite": "^4.0.0-beta.8",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
     "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "tailwindcss": "^4.0.0-beta.8",
     "typescript": "^5.7.2",
     "vite": "^6.0.7",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8",
     "wireit": "^0.14.9"
   },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ]
+  },
   "wireit": {
     "build": {
       "command": "NODE_ENV=production react-router build"
     },
     "fix": {
-      "command": "prettier --cache --write '*.{ts,md}' 'app/**/*.{ts,tsx}' '.github/**/*.yml'"
+      "command": "prettier --cache --write '*.{ts,md}' 'app/**/*' '.github/**/*.yml'"
     },
     "test": {
       "dependencies": [
@@ -53,10 +61,10 @@
       ]
     },
     "test:format": {
-      "command": "prettier --cache --check '*.{ts,md}' 'app/**/*.{ts,tsx}' '.github/**/*.yml'",
+      "command": "prettier --cache --check '*.{ts,md}' 'app/**/*' '.github/**/*.yml'",
       "files": [
         "*.{ts,md}",
-        "app/**/*.{ts,tsx}",
+        "app/**/*",
         ".github/**/*.yml"
       ],
       "output": []
