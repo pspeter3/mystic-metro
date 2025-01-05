@@ -5,3 +5,6 @@ build/
 
 # Dependencies
 node_modules/
+
+# Test
+coverage/
