@@ -93,7 +93,7 @@
       "files": [
         "app/routes.ts",
         "app/routes/**/*.tsx",
-        "!app/routes/**/*.spec.tsx"
+        "!app/routes/**/*.test.tsx"
       ],
       "output": [
         ".react-router/**/*.d.ts"
