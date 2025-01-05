@@ -1,2 +1,6 @@
+# Build
+.react-router/
+.wireit/
+
 # Dependencies
 node_modules/

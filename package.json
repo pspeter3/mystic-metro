@@ -3,7 +3,10 @@
   "private": true,
   "description": "Post apocalyptic dungeon punk exploration roguelike",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "wireit",
+    "fix": "wireit",
+    "start": "react-router dev",
+    "test": "wireit"
   },
   "repository": {
     "type": "git",
@@ -16,6 +19,8 @@
   },
   "homepage": "https://github.com/pspeter3/mystic-metro#readme",
   "dependencies": {
+    "@react-router/node": "^7.1.1",
+    "isbot": "^5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.1.1"
@@ -30,5 +35,49 @@
     "vite": "^6.0.7",
     "vite-tsconfig-paths": "^5.1.4",
     "wireit": "^0.14.9"
+  },
+  "wireit": {
+    "build": {
+      "command": "NODE_ENV=production react-router build"
+    },
+    "fix": {
+      "command": "prettier --cache --write '*.{ts,md}' 'app/**/*.{ts,tsx}'"
+    },
+    "test": {
+      "dependencies": [
+        "test:format",
+        "test:types"
+      ]
+    },
+    "test:format": {
+      "command": "prettier --cache --check '*.{ts,md}' 'app/**/*.{ts,tsx}'",
+      "files": [
+        "*.{ts,md}",
+        "app/**/*.{ts,tsx}"
+      ],
+      "output": []
+    },
+    "test:types": {
+      "command": "tsc",
+      "files": [
+        "app/**/*.{ts,tsx}",
+        "tsconfig.json"
+      ],
+      "output": [],
+      "dependencies": [
+        "typegen"
+      ]
+    },
+    "typegen": {
+      "command": "react-router typegen",
+      "files": [
+        "app/routes.ts",
+        "app/routes/**/*.tsx",
+        "!app/routes/**/*.test.tsx"
+      ],
+      "output": [
+        ".react-router/**/*.d.ts"
+      ]
+    }
   }
 }
