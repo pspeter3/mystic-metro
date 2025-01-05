@@ -1,0 +1,7 @@
+# Build
+build/
+.react-router/
+.wireit/
+
+# Dependencies
+node_modules/

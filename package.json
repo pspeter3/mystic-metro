@@ -1,0 +1,94 @@
+{
+  "name": "mystic-metro",
+  "private": true,
+  "description": "Post apocalyptic dungeon punk exploration roguelike",
+  "type": "module",
+  "scripts": {
+    "build": "wireit",
+    "fix": "wireit",
+    "start": "react-router dev",
+    "test": "wireit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pspeter3/mystic-metro.git"
+  },
+  "author": "pspeter3",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pspeter3/mystic-metro/issues"
+  },
+  "homepage": "https://github.com/pspeter3/mystic-metro#readme",
+  "dependencies": {
+    "@react-router/node": "^7.1.1",
+    "isbot": "^5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router": "^7.1.1"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.1.1",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^2.1.8",
+    "wireit": "^0.14.9"
+  },
+  "wireit": {
+    "build": {
+      "command": "NODE_ENV=production react-router build"
+    },
+    "fix": {
+      "command": "prettier --cache --write '*.{ts,md}' 'app/**/*.{ts,tsx}' '.github/**/*.yml'"
+    },
+    "test": {
+      "dependencies": [
+        "test:format",
+        "test:spec",
+        "test:types"
+      ]
+    },
+    "test:format": {
+      "command": "prettier --cache --check '*.{ts,md}' 'app/**/*.{ts,tsx}' '.github/**/*.yml'",
+      "files": [
+        "*.{ts,md}",
+        "app/**/*.{ts,tsx}",
+        ".github/**/*.yml"
+      ],
+      "output": []
+    },
+    "test:spec": {
+      "command": "vitest run",
+      "files": [
+        "app/**/*.{ts,tsx}"
+      ],
+      "output": []
+    },
+    "test:types": {
+      "command": "tsc",
+      "files": [
+        "app/**/*.{ts,tsx}",
+        "tsconfig.json"
+      ],
+      "output": [],
+      "dependencies": [
+        "typegen"
+      ]
+    },
+    "typegen": {
+      "command": "react-router typegen",
+      "files": [
+        "app/routes.ts",
+        "app/routes/**/*.tsx",
+        "!app/routes/**/*.spec.tsx"
+      ],
+      "output": [
+        ".react-router/**/*.d.ts"
+      ]
+    }
+  }
+}
