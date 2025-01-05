@@ -7,8 +7,7 @@
     "build": "wireit",
     "fix": "wireit",
     "start": "react-router dev",
-    "test": "wireit",
-    "watch": "vitest --watch --coverage.enabled=true"
+    "test": "wireit"
   },
   "repository": {
     "type": "git",
