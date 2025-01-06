@@ -21,6 +21,7 @@
   "homepage": "https://github.com/pspeter3/mystic-metro#readme",
   "dependencies": {
     "@react-router/node": "^7.1.1",
+    "heap-js": "^2.6.0",
     "isbot": "^5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
