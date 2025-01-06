@@ -1,5 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { DualGrid, GridEdge2D, GridNode2D, GridTile2D } from "./dual-grid";
+import {
+  DualGrid,
+  GridEdge2D,
+  GridEdge2DCodec,
+  GridNode2D,
+  GridNode2DCodec,
+  GridTile2D,
+  GridTile2DCodec,
+  type GridEdge2DId,
+  type GridNode2DId,
+  type GridTile2DId,
+} from "./dual-grid";
 import { GridVector2D } from "./grid-vector2d";
 import {
   CardinalDirection,
@@ -7,6 +18,7 @@ import {
   gridDirections,
   toGridDelta,
 } from "./grid-direction";
+import { GridBounds2D } from "./grid-bounds2d";
 
 describe("DualGrid", () => {
   test("constructor", () => {
@@ -83,5 +95,59 @@ describe("GridNode2D", () => {
     expect(node.protrude(CardinalDirection.South)).toStrictEqual(
       new GridEdge2D(0, 0, CardinalDirection.West),
     );
+  });
+});
+
+describe("codecs", () => {
+  describe("GridTile2DCodec", () => {
+    test("toId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridTile2DCodec(bounds);
+      expect(codec.toId(new GridTile2D(1, 1))).toBe(4);
+    });
+
+    test("fromId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridTile2DCodec(bounds);
+      expect(codec.fromId(4 as GridTile2DId)).toStrictEqual(
+        new GridTile2D(1, 1),
+      );
+    });
+  });
+
+  describe("GridNode2DCodec", () => {
+    test("toId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridNode2DCodec(bounds);
+      expect(codec.toId(new GridNode2D(1, 1))).toBe(4);
+    });
+
+    test("fromId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridNode2DCodec(bounds);
+      expect(codec.fromId(4 as GridNode2DId)).toStrictEqual(
+        new GridNode2D(1, 1),
+      );
+    });
+  });
+
+  describe("GridEdge2DCodec", () => {
+    test("toId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridEdge2DCodec(bounds);
+      expect(codec.toId(new GridEdge2D(1, 1, CardinalDirection.North))).toBe(4);
+      expect(codec.toId(new GridEdge2D(1, 1, CardinalDirection.West))).toBe(13);
+    });
+
+    test("fromId", () => {
+      const bounds = GridBounds2D.fromOrigin({ q: 3, r: 3 });
+      const codec = new GridEdge2DCodec(bounds);
+      expect(codec.fromId(4 as GridEdge2DId)).toStrictEqual(
+        new GridEdge2D(1, 1, CardinalDirection.North),
+      );
+      expect(codec.fromId(13 as GridEdge2DId)).toStrictEqual(
+        new GridEdge2D(1, 1, CardinalDirection.West),
+      );
+    });
   });
 });

@@ -21,9 +21,27 @@ export class GridBounds2D {
     return this.max.r - this.min.r;
   }
 
+  get size(): number {
+    return this.cols * this.rows;
+  }
+
   includes({ q, r }: GridVector2DRecord): boolean {
     return (
       q >= this.min.q && q < this.max.q && r >= this.min.r && r < this.max.r
     );
+  }
+
+  toLocal({ q, r }: GridVector2DRecord): GridVector2D {
+    return new GridVector2D(q - this.min.q, r - this.min.r);
+  }
+
+  toGlobal({ q, r }: GridVector2DRecord): GridVector2D {
+    return new GridVector2D(q + this.min.q, r + this.min.r);
+  }
+
+  assert(vector: GridVector2DRecord): void {
+    if (!this.includes(vector)) {
+      throw new Error("Out of bounds");
+    }
   }
 }
