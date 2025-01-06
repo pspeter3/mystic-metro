@@ -1,10 +1,14 @@
 import type { MetaFunction } from "react-router";
-import { DualGrid, GridTile2D, GridTile2DCodec } from "~/grid/dual-grid";
+import {
+  DualGrid,
+  GridEdge2D,
+  GridTile2D,
+  GridTile2DCodec,
+} from "~/grid/dual-grid";
 import type { Route } from "./+types/movement";
 import {
   createContext,
   memo,
-  use,
   useCallback,
   useContext,
   useState,
@@ -13,8 +17,15 @@ import {
 } from "react";
 import { CodecMap } from "~/collections/codec-map";
 import Heap from "heap-js";
-import { gridDirections, isDiagonalDirection } from "~/grid/grid-direction";
+import {
+  CardinalDirection,
+  cardinalDirections,
+  gridDirections,
+  isCardinalDirection,
+  isDiagonalDirection,
+} from "~/grid/grid-direction";
 import type { GridBounds2D } from "~/grid/grid-bounds2d";
+import { CodecSet } from "~/collections/codec-set";
 
 export const meta: MetaFunction = () => [{ title: "Movement" }];
 
@@ -43,16 +54,47 @@ const GridScaleContext = createContext<GridScaleContextData>({
 
 interface GridProps {
   readonly grid: DualGrid;
+  readonly onClick: (target: GridEdge2D | GridTile2D) => void;
   readonly children: ReactNode;
 }
 
-const Grid: FC<GridProps> = ({ grid, children }) => {
+const Grid: FC<GridProps> = ({ grid, onClick, children }) => {
   const bounds = grid.bounds.tiles;
-  const { tile } = useContext(GridScaleContext);
+  const { tile, wall } = useContext(GridScaleContext);
+  const pad = wall / 2;
+  const handleClick = (event: React.MouseEvent<SVGElement>) => {
+    const point = DOMPoint.fromPoint(event.nativeEvent);
+    const target = point.matrixTransform(
+      (event.currentTarget as SVGGraphicsElement).getScreenCTM()!.inverse(),
+    );
+    const pos = new GridTile2D(
+      Math.floor(target.x / tile),
+      Math.floor(target.y / tile),
+    );
+    const tx = target.x % tile;
+    const ty = target.y % tile;
+    if (tx > pad && tx < tile - pad && ty > pad && ty < tile - pad) {
+      return onClick(pos);
+    }
+    if (ty < pad) {
+      return onClick(pos.border(CardinalDirection.North));
+    }
+    if (tx > tile - pad) {
+      return onClick(pos.border(CardinalDirection.East));
+    }
+    if (ty > tile - pad) {
+      return onClick(pos.border(CardinalDirection.South));
+    }
+    if (tx < pad) {
+      return onClick(pos.border(CardinalDirection.West));
+    }
+    throw new Error("Invalid click");
+  };
   return (
     <svg
       viewBox={`0 0 ${bounds.cols * tile} ${bounds.rows * tile}`}
       className="w-full max-w-[100vmin]"
+      onClick={handleClick}
     >
       <defs>
         <pattern
@@ -79,29 +121,72 @@ const Grid: FC<GridProps> = ({ grid, children }) => {
   );
 };
 
+interface RectProps {
+  readonly pos: GridTile2D;
+  readonly className?: string;
+  readonly onClick?: () => void;
+}
+
+const Rect: FC<RectProps> = ({ pos, className, onClick }) => {
+  const { tile, wall } = useContext(GridScaleContext);
+  const pad = wall / 2;
+  return (
+    <rect
+      x={tile * pos.q + pad}
+      y={tile * pos.r + pad}
+      width={tile - wall}
+      height={tile - wall}
+      className={className}
+      rx={pad}
+      r={pad}
+      onClick={onClick}
+    />
+  );
+};
+
 interface MoveOptionsProps {
-  readonly bounds: GridBounds2D;
-  readonly codec: GridTile2DCodec;
+  readonly grid: DualGrid;
   readonly pos: GridTile2D;
   readonly maxMovement: number;
   readonly diagonalCost: number;
+  readonly difficult: ReadonlySet<GridTile2D>;
+  readonly walls: ReadonlySet<GridEdge2D>;
   readonly moveTo: (pos: GridTile2D) => void;
 }
 
 const MoveOptions: FC<MoveOptionsProps> = memo(
-  ({ bounds, codec, pos, maxMovement, diagonalCost, moveTo }) => {
-    const { tile, wall } = useContext(GridScaleContext);
-    const pad = wall / 2;
-    const costs = new CodecMap(codec, [[pos, 0]]);
+  ({ grid, pos, maxMovement, diagonalCost, difficult, walls, moveTo }) => {
+    const costs = new CodecMap(grid.codecs.tiles, [[pos, 0]]);
     const queue = new Heap<GridTile2D>((a, b) => costs.get(a)! - costs.get(b)!);
     queue.push(pos);
     for (const tile of queue) {
       const cost = costs.get(tile)!;
       for (const d of gridDirections()) {
-        const delta = isDiagonalDirection(d) ? diagonalCost : 1;
         const neighbor = tile.neighbor(d);
+        if (!grid.bounds.tiles.includes(neighbor)) {
+          continue;
+        }
+        if (isCardinalDirection(d)) {
+          if (walls.has(tile.border(d))) {
+            continue;
+          }
+        } else {
+          const corner = tile.corner(d);
+          const isInvalid = Array.from(cardinalDirections()).some((cd) => {
+            const edge = corner.protrude(cd);
+            if (!grid.bounds.tiles.includes(edge)) {
+              return false;
+            }
+            return walls.has(edge);
+          });
+          if (isInvalid) {
+            continue;
+          }
+        }
+        const raw = isDiagonalDirection(d) ? diagonalCost : 1;
+        const delta = difficult.has(neighbor) ? raw * 2 : raw;
         const next = cost + delta;
-        if (Math.floor(next) > maxMovement || !bounds.includes(neighbor)) {
+        if (Math.floor(next) > maxMovement) {
           continue;
         }
         if (next < (costs.get(neighbor) ?? Infinity)) {
@@ -114,15 +199,10 @@ const MoveOptions: FC<MoveOptionsProps> = memo(
     return (
       <>
         {Array.from(costs.keys()).map((t) => (
-          <rect
-            key={codec.toId(t)}
-            x={tile * t.q + pad}
-            y={tile * t.r + pad}
-            width={tile - wall}
-            height={tile - wall}
+          <Rect
+            key={grid.codecs.tiles.toId(t)}
+            pos={t}
             className="fill-sky-500/50"
-            rx={pad}
-            r={pad}
             onClick={() => moveTo(t)}
           />
         ))}
@@ -149,6 +229,28 @@ const Char: FC<CharProps> = ({ pos, toggleMoving }) => {
   );
 };
 
+const Wall: FC<{ edge: GridEdge2D }> = ({ edge }) => {
+  const { tile, wall } = useContext(GridScaleContext);
+  const pad = wall / 2;
+  const size = tile - wall;
+  const isHorizontal = edge.d === CardinalDirection.North;
+  const tx = tile * edge.q;
+  const ty = tile * edge.r;
+  const x = isHorizontal ? tx + pad : tx - pad;
+  const y = isHorizontal ? ty - pad : ty + pad;
+  const width = isHorizontal ? size : wall;
+  const height = isHorizontal ? wall : size;
+  return (
+    <rect
+      x={x}
+      y={y}
+      width={width}
+      height={height}
+      className="fill-slate-900"
+    />
+  );
+};
+
 const DiagonalCosts = {
   chebyshev: 1,
   euclidean: Math.SQRT2,
@@ -168,9 +270,38 @@ export default function MovementRoute({
     useState<DiagonalCostKind>("pathfinder");
   const moveTo = useCallback((pos: GridTile2D) => {
     setCharacter(pos);
-    setIsMoving(false)
+    setIsMoving(false);
   }, []);
-
+  const [difficult, setDifficult] = useState<ReadonlySet<GridTile2D>>(
+    new CodecSet(grid.codecs.tiles),
+  );
+  const [walls, setWalls] = useState<ReadonlySet<GridEdge2D>>(
+    new CodecSet(grid.codecs.edges),
+  );
+  const onClick = (target: GridEdge2D | GridTile2D) => {
+    if (isMoving) {
+      return;
+    }
+    if (target instanceof GridEdge2D) {
+      const next = new CodecSet(grid.codecs.edges, walls);
+      if (next.has(target)) {
+        next.delete(target);
+      } else {
+        next.add(target);
+      }
+      return setWalls(next);
+    }
+    if (character.q === target.q && character.r === target.r) {
+      return;
+    }
+    const next = new CodecSet(grid.codecs.tiles, difficult);
+    if (next.has(target)) {
+      next.delete(target);
+    } else {
+      next.add(target);
+    }
+    setDifficult(next);
+  };
   return (
     <main className="flex gap-4">
       <aside className="w-64 space-y-4 p-4">
@@ -209,14 +340,25 @@ export default function MovementRoute({
           </select>
         </label>
       </aside>
-      <Grid grid={grid}>
+      <Grid grid={grid} onClick={onClick}>
+        {Array.from(difficult).map((t) => (
+          <Rect
+            key={grid.codecs.tiles.toId(t)}
+            pos={t}
+            className="fill-orange-500/50"
+          />
+        ))}
+        {Array.from(walls).map((edge) => (
+          <Wall key={grid.codecs.edges.toId(edge)} edge={edge} />
+        ))}
         {isMoving && (
           <MoveOptions
-            bounds={grid.bounds.tiles}
-            codec={grid.codecs.tiles}
+            grid={grid}
             pos={character}
             maxMovement={maxMovement}
             diagonalCost={DiagonalCosts[diagonalCost]}
+            difficult={difficult}
+            walls={walls}
             moveTo={moveTo}
           />
         )}

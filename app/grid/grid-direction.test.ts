@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
 import {
   cardinalDirections,
-  DiagonalDirection,
   diagonalDirections,
   gridDirections,
   isCardinalDirection,
