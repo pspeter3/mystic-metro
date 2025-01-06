@@ -1,25 +1,38 @@
+import type { Brand } from "~/utils/brand";
 import { GridBounds2D } from "./grid-bounds2d";
 import {
   CardinalDirection,
   DiagonalDirection,
   toGridDelta,
   type GridDirection,
-  type GridDirectionEntry,
 } from "./grid-direction";
 import { GridVector2D, type GridVector2DRecord } from "./grid-vector2d";
+import type { Codec } from "~/collections/codec";
 
 export interface DualGridBounds {
   readonly tiles: GridBounds2D;
   readonly nodes: GridBounds2D;
 }
 
+export interface DualGridCodecs {
+  readonly tiles: GridTile2DCodec;
+  readonly nodes: GridNode2DCodec;
+  readonly edges: GridEdge2DCodec;
+}
+
 export class DualGrid {
   readonly bounds: DualGridBounds;
+  readonly codecs: DualGridCodecs;
 
   constructor(size: GridVector2DRecord) {
     this.bounds = {
       tiles: GridBounds2D.fromOrigin(size),
       nodes: GridBounds2D.fromOrigin({ q: size.q + 1, r: size.r + 1 }),
+    };
+    this.codecs = {
+      tiles: new GridTile2DCodec(this.bounds.tiles),
+      nodes: new GridNode2DCodec(this.bounds.nodes),
+      edges: new GridEdge2DCodec(this.bounds.nodes),
     };
   }
 }
@@ -142,5 +155,84 @@ export class GridEdge2D implements GridVector2DRecord {
     this.q = q;
     this.r = r;
     this.d = d;
+  }
+}
+
+export type GridTile2DId = Brand<number, "GridTile2DId">;
+export type GridNode2DId = Brand<number, "GridNode2DId">;
+export type GridEdge2DId = Brand<number, "GridEdge2DId">;
+
+export class GridTile2DCodec implements Codec<GridTile2D, GridTile2DId> {
+  readonly #bounds: GridBounds2D;
+
+  constructor(bounds: GridBounds2D) {
+    this.#bounds = bounds;
+  }
+
+  toId(tile: GridTile2D): GridTile2DId {
+    this.#bounds.assert(tile);
+    const { q, r } = this.#bounds.toLocal(tile);
+    return (r * this.#bounds.cols + q) as GridTile2DId;
+  }
+
+  fromId(id: GridTile2DId): GridTile2D {
+    const { cols } = this.#bounds;
+    const q = id % cols;
+    const r = Math.floor(id / cols);
+    const result = GridTile2D.fromRecord(this.#bounds.toGlobal({ q, r }));
+    this.#bounds.assert(result);
+    return result;
+  }
+}
+
+export class GridNode2DCodec implements Codec<GridNode2D, GridNode2DId> {
+  readonly #bounds: GridBounds2D;
+
+  constructor(bounds: GridBounds2D) {
+    this.#bounds = bounds;
+  }
+
+  toId(node: GridNode2D): GridNode2DId {
+    this.#bounds.assert(node);
+    const { q, r } = this.#bounds.toLocal(node);
+    return (r * this.#bounds.cols + q) as GridNode2DId;
+  }
+
+  fromId(id: GridNode2DId): GridNode2D {
+    const { cols } = this.#bounds;
+    const q = id % cols;
+    const r = Math.floor(id / cols);
+    const result = GridNode2D.fromRecord(this.#bounds.toGlobal({ q, r }));
+    this.#bounds.assert(result);
+    return result;
+  }
+}
+
+export class GridEdge2DCodec implements Codec<GridEdge2D, GridEdge2DId> {
+  readonly #bounds: GridBounds2D;
+
+  constructor(bounds: GridBounds2D) {
+    this.#bounds = bounds;
+  }
+
+  toId(edge: GridEdge2D): GridEdge2DId {
+    this.#bounds.assert(edge);
+    const offset = edge.d === CardinalDirection.North ? 0 : this.#bounds.size;
+    const { q, r } = this.#bounds.toLocal(edge);
+    return (r * this.#bounds.cols + q + offset) as GridEdge2DId;
+  }
+
+  fromId(id: GridEdge2DId): GridEdge2D {
+    const { size, cols } = this.#bounds;
+    const d =
+      Math.floor(id / size) === 0
+        ? CardinalDirection.North
+        : CardinalDirection.West;
+    const v = id % size;
+    const q = v % cols;
+    const r = Math.floor(v / cols);
+    const result = GridNode2D.fromRecord(this.#bounds.toGlobal({ q, r }));
+    this.#bounds.assert(result);
+    return GridEdge2D.fromRecord(result, d);
   }
 }
