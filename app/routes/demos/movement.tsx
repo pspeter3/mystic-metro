@@ -9,6 +9,7 @@ import type { Route } from "./+types/movement";
 import {
   createContext,
   memo,
+  use,
   useCallback,
   useContext,
   useState,
@@ -156,8 +157,10 @@ interface MoveOptionsProps {
 
 const MoveOptions: FC<MoveOptionsProps> = memo(
   ({ grid, pos, maxMovement, diagonalCost, difficult, walls, moveTo }) => {
+    const ctx = useContext(GridScaleContext);
     const costs = new CodecMap(grid.codecs.tiles, [[pos, 0]]);
     const queue = new Heap<GridTile2D>((a, b) => costs.get(a)! - costs.get(b)!);
+    const from = new CodecMap<GridTile2D, Set<GridTile2D>>(grid.codecs.tiles);
     queue.push(pos);
     for (const tile of queue) {
       const cost = costs.get(tile)!;
@@ -189,16 +192,34 @@ const MoveOptions: FC<MoveOptionsProps> = memo(
         if (Math.floor(next) > maxMovement) {
           continue;
         }
-        if (next < (costs.get(neighbor) ?? Infinity)) {
+        const current = costs.get(neighbor) ?? Infinity;
+        if (next < current) {
           costs.set(neighbor, next);
           queue.push(neighbor);
+          from.set(neighbor, new CodecSet(grid.codecs.tiles, [tile]));
+        } else if (next === current) {
+          from.get(neighbor)!.add(tile);
         }
       }
     }
     costs.delete(pos);
     return (
       <>
-        {Array.from(costs.keys()).map((t) => (
+      {Array.from<readonly [GridTile2D, ReadonlySet<GridTile2D>]>(
+          from.entries(),
+        ).flatMap(([tile, sources]) =>
+          Array.from<GridTile2D>(sources).map((source) => (
+            <line
+              key={`${grid.codecs.tiles.toId(tile)}-${grid.codecs.tiles.toId(source)}`}
+              x1={(tile.q + 0.5) * ctx.tile}
+              y1={(tile.r + 0.5) * ctx.tile}
+              x2={(source.q + 0.5) * ctx.tile}
+              y2={(source.r + 0.5) * ctx.tile}
+              className="stroke-sky-500/50 stroke-4"
+            ></line>
+          )),
+        )}
+        {Array.from<GridTile2D>(costs.keys()).map((t) => (
           <Rect
             key={grid.codecs.tiles.toId(t)}
             pos={t}
@@ -206,6 +227,7 @@ const MoveOptions: FC<MoveOptionsProps> = memo(
             onClick={() => moveTo(t)}
           />
         ))}
+        
       </>
     );
   },
