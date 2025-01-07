@@ -205,7 +205,7 @@ const MoveOptions: FC<MoveOptionsProps> = memo(
     costs.delete(pos);
     return (
       <>
-      {Array.from<readonly [GridTile2D, ReadonlySet<GridTile2D>]>(
+        {Array.from<readonly [GridTile2D, ReadonlySet<GridTile2D>]>(
           from.entries(),
         ).flatMap(([tile, sources]) =>
           Array.from<GridTile2D>(sources).map((source) => (
@@ -227,7 +227,6 @@ const MoveOptions: FC<MoveOptionsProps> = memo(
             onClick={() => moveTo(t)}
           />
         ))}
-        
       </>
     );
   },
